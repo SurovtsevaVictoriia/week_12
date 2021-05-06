@@ -1,0 +1,210 @@
+#include <SFML/Graphics.hpp>
+#include <time.h>
+#include <list>
+#include <random>
+#include<String>
+#include <cmath>
+
+
+using namespace sf;
+
+//width of window
+const int W = 1200;
+//hight of window
+const int H = 800;
+
+//dergees to radians
+float DEGTORAD = 0.017453f;
+
+//numbers 
+int n_Entities = 20;
+int r_r = 10;
+//returns mersenne()
+int f_rand() {
+
+    std::random_device rd;
+    std::mt19937 mersenne(rd());
+
+    //return mersenne();
+    return rand();
+}
+
+
+
+
+class Entity
+{
+public:
+    float x, y,
+          dx, dy,
+          R;
+
+
+    Entity()
+    {   
+        x = f_rand() % W;
+        y = f_rand() % H;
+
+        dx = f_rand() % 7 - 3;
+        dy = f_rand() % 7 - 3;
+      
+        R = r_r;
+    }
+
+
+    void move() {
+
+        x += dx;
+        y += dy;
+
+        if ((x > W) || (x < 0))  dx = -dx;  
+        if ((y > H) || (y < 0))  dy = -dy;
+
+     
+    };
+
+   
+
+
+    virtual void update() { 
+        move();    
+    };
+
+    void draw(RenderWindow& app)
+    {       
+        //hitbox
+        CircleShape circle(R);
+        circle.setFillColor(Color(255, 0, 0, 170));
+        circle.setPosition(x, y);
+        circle.setOrigin(R, R);
+        app.draw(circle);
+
+    }
+
+    virtual ~Entity() {};
+};
+
+
+bool isCollide(Entity* a, Entity* b)
+{   
+    if (a != b) {
+        return (b->x - a->x) * (b->x - a->x) +
+            (b->y - a->y) * (b->y - a->y) <
+            4 * r_r * r_r;
+    }
+    else return false;
+}
+
+void calc_collide(Entity* a, Entity* b) {
+
+   /* float v_a = sqrt(a->dx * a->dx + a->dy + a->dy);
+    float v_b = sqrt(b->dx * b->dx + b->dy + b->dy);
+
+    float phi = atan((a->y - b->y) / (a->x - b->x));
+    float theta_a = atan(a->dy / a->dx);
+    float theta_b = atan(b->dy / b->dx);
+
+    a->dx = v_b * cos(theta_b - phi) * cos(phi);
+    a->dy = v_b * cos(theta_b - phi) * sin(phi);
+    b->dx = v_a * cos(theta_a - phi) * cos(phi);
+    b->dy = v_a * cos(theta_a - phi) * sin(phi);*/
+
+    
+   float n_x = a->x - b->x;
+   float n_y = a->y - b->y;
+      
+   float  a_x = a->dx;
+   float  a_y = a->dy;
+
+   float b_x = b->dx;
+   float b_y = b->dy;
+
+    a->dx = a_x - 2 * n_x * (a_x * n_y+ a_y * n_x) / (n_x * n_x + n_y * n_y);
+    a->dy = a_y - 2 * n_y * (a_x * n_y + a_y * n_x) / (n_x * n_x + n_y * n_y);
+
+    b->dx = b_x - 2 * -n_x * (b_x * -n_y + b_y * -n_x) / (n_x * n_x + n_y * n_y);
+    b->dy = b_y - 2 * -n_y * (b_x * -n_y + b_y * -n_x) / (n_x * n_x + n_y * n_y);
+
+  /* a->dx = b_x;
+   a->dy = -b_y;
+   b->dx = -a_x;
+   b->dy = a_y; */
+
+}
+
+int main()
+{
+    
+    RenderWindow app(VideoMode(W, H), "particles");
+    app.setFramerateLimit(60);
+
+
+    std::list<Entity*> entities;
+    //initial spawn
+    for (int i = 0; i < n_Entities; i++)
+    {
+        Entity* a = new Entity();
+        entities.push_back(a);
+    }
+
+
+
+    /////main loop/////
+    while (app.isOpen())
+    {
+        Event event;
+        while (app.pollEvent(event))
+        {
+            if (event.type == Event::Closed)
+                app.close();
+                     
+        }     
+
+        for (auto a : entities) {
+            for (auto b : entities)
+            {
+                if (isCollide(a, b))
+                {
+                    /*a->dx = f_rand() % 7 - 3;
+                    a->dy = f_rand() % 7 - 3;
+
+                    b->dx = f_rand() % 7 - 3;
+                    b->dy = f_rand() % 7 - 3;    */
+
+                   /* a->dx = -a->dx;
+                    a->dy = -a->dy;
+
+                    b->dx = -b->dx;
+                    b->dy = -b->dy;*/
+
+                    calc_collide(a, b);
+
+
+                
+                }
+
+            }
+
+        }
+      
+
+        for (auto i = entities.begin();i != entities.end(); i++)
+        {
+            Entity* e = *i;
+
+            e->update();
+           
+        }
+        
+      
+        //////draw//////
+        app.clear(Color(100, 220, 100, 100));
+        for (auto i : entities) i->draw(app);
+        //app.clear(Color(100, 220, 100, 100));
+        app.display();
+
+
+    }
+
+    return 0;
+}
