@@ -18,7 +18,7 @@ float DEGTORAD = 0.017453f;
 
 //numbers 
 int n_Entities = 20;
-int r_r = 10;
+int r_r = 5;
 //returns mersenne()
 int f_rand() {
 
@@ -57,8 +57,8 @@ public:
         x += dx;
         y += dy;
 
-        if ((x > W) || (x < 0))  dx = -dx;  
-        if ((y > H) || (y < 0))  dy = -dy;
+        if ((x > W - r_r) || (x < r_r))  dx = -dx;  
+        if ((y > H - r_r) || (y < r_r))  dy = -dy;
 
      
     };
@@ -112,28 +112,38 @@ void calc_collide(Entity* a, Entity* b) {
     
    float n_x = a->x - b->x;
    float n_y = a->y - b->y;
-      
-   float  a_x = a->dx;
-   float  a_y = a->dy;
+   
+   float n = n_x * n_x + n_y * n_y;
+  
+
+   float a_x = a->dx;
+   float a_y = a->dy;
 
    float b_x = b->dx;
    float b_y = b->dy;
 
-    a->dx = a_x - 2 * n_x * (a_x * n_y+ a_y * n_x) / (n_x * n_x + n_y * n_y);
-    a->dy = a_y - 2 * n_y * (a_x * n_y + a_y * n_x) / (n_x * n_x + n_y * n_y);
+   float a_a = sqrt(a_x * a_x + a_y * a_y);
+   float b_b = sqrt( b_x * b_x + b_y * b_y);
 
-    b->dx = b_x - 2 * -n_x * (b_x * -n_y + b_y * -n_x) / (n_x * n_x + n_y * n_y);
-    b->dy = b_y - 2 * -n_y * (b_x * -n_y + b_y * -n_x) / (n_x * n_x + n_y * n_y);
+   /* a->dx +=   2 * n_x * (a_x * n_x + a_y * n_y) / (n_x * n_x + n_y * n_y);
+    a->dy +=   2 * n_y * (a_x * n_x + a_y * n_y) / (n_x * n_x + n_y * n_y);
 
-  /* a->dx = b_x;
-   a->dy = -b_y;
-   b->dx = -a_x;
-   b->dy = a_y; */
+    b->dx +=   2 * n_x * (b_x * n_x + b_y * n_y) / (n_x * n_x + n_y * n_y);
+    b->dy +=   2 * n_y * (b_x * n_x + b_y * n_y) / (n_x * n_x + n_y * n_y);*/
+
+   a_a = 15 + f_rand() % 10;
+   b_b = 15 + f_rand() % 10;
+
+   a->dx = n_x/n * b_b;
+   a->dy = n_y/n  *b_b;
+   b->dx = -n_x/n *a_a;
+   b->dy = -n_y/n * a_a;
 
 }
 
 int main()
-{
+{   
+    srand(time(NULL));
     
     RenderWindow app(VideoMode(W, H), "particles");
     app.setFramerateLimit(60);
@@ -165,17 +175,7 @@ int main()
             {
                 if (isCollide(a, b))
                 {
-                    /*a->dx = f_rand() % 7 - 3;
-                    a->dy = f_rand() % 7 - 3;
-
-                    b->dx = f_rand() % 7 - 3;
-                    b->dy = f_rand() % 7 - 3;    */
-
-                   /* a->dx = -a->dx;
-                    a->dy = -a->dy;
-
-                    b->dx = -b->dx;
-                    b->dy = -b->dy;*/
+                   
 
                     calc_collide(a, b);
 
