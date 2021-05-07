@@ -4,6 +4,7 @@
 #include <random>
 #include<String>
 #include <cmath>
+#include <iostream>
 
 
 using namespace sf;
@@ -12,20 +13,25 @@ using namespace sf;
 const int W = 1200;
 //hight of window
 const int H = 800;
-const int Res = 20;
+const int Res = 50;
 //dergees to radians
 float DEGTORAD = 0.017453f;
 
 //numbers 
-int n_Entities = 200;
+int n_Entities = 500;
 int r_r = 5;
+
+//velocities
+const int v_max = 15;
+const int v_min = 5;
+
 //returns mersenne()
 int f_rand() {
 
     std::random_device rd;
     std::mt19937 mersenne(rd());
 
-    //return mersenne();
+   //return mersenne();
     return rand();
 }
 
@@ -40,11 +46,13 @@ public:
 
     Entity()
     {   
-        x = f_rand() % W;
-        y = f_rand() % H;
+        x = 2*r_r + f_rand() % (W - 4*r_r);
+        y = 2*r_r + f_rand() % (H - 4*r_r);
 
-        dx = f_rand() % 7 - 3;
-        dy = f_rand() % 7 - 3;
+        dx = (f_rand() %( (v_max - v_min)) - (v_max - v_min)/2) / 1,5;
+        dy = (f_rand() %( (v_max - v_min)) - (v_max - v_min)/2) / 1,5;
+       
+       // dy = f_rand() % 7 - 3;
       
         R = r_r;
     }
@@ -55,8 +63,8 @@ public:
         x += dx;
         y += dy;
 
-        if ((x > W - r_r) || (x < r_r))  dx = -dx;  
-        if ((y > H - r_r) || (y < r_r))  dy = -dy;
+        if ((x > W - 2*r_r) || (x < 2*r_r))  dx = -dx;  
+        if ((y > H - 2*r_r) || (y < 2*r_r))  dy = -dy;
 
      
     };
@@ -93,9 +101,13 @@ private:
     int m_height;
     int m_max;
 
-    sf::Image m_image;
-    sf::Sprite m_sprite;
-    sf::Texture m_texture;
+
+    int x_num;
+    int y_num;
+
+    int i_max;
+    int j_max;
+
 
 public:
   
@@ -106,73 +118,74 @@ public:
         //m_sprite.setOrigin(-width / 2, -height / 2);
        
 
-        const int x_num = width / m_res;
-        const int y_num = height / m_res;
+         x_num = width / m_res;
+         y_num = height / m_res;
+
+        //m_max = 10 * n_Entities/ (x_num*y_num);
 
 
-        for (auto i = 0; i <= x_num; i++) {
+        for (auto i = 0; i < x_num; i++) {
             m_numbers.push_back(std::vector <int>(y_num));
         }
 
         m_colors.assign({
            sf::Color(18, 40, 61), //0
            sf::Color(10, 72, 101),//1 - 1/4m
+           sf::Color(148, 117, 159),
            sf::Color(177, 61, 36),//1/4 m - 2/4m
            sf::Color(246, 180, 36),//2/4 m - 3/4 m
            sf::Color(252, 248,231),//3/4 m - m
         });
 
-        m_image.create(width, height, sf::Color(0, 255, 255));    
-        m_texture.loadFromImage(m_image);
-        m_sprite.setTexture(m_texture, true);
-      
     }
 
     void calculate(std::list<Entity*> & entities) {
 
-        //res - number of pixels per squarev
-        for (auto vec_x : m_numbers) {
-            for (auto y : vec_x) {
-                y = 0;
+        for (int i = 0; i < x_num; i++) {
+            for (int j = 0; j < y_num; j++) {
+
+                m_numbers[i][j] = 0;
             }
         }
         
-        for (auto e : entities) {
+        m_max = 0;
+       
+        std::cout << m_max << '\n';
+
+        for (auto e:entities) {           
            int x_i = e->x / m_res;
            int y_i = e->y / m_res;
-           int a =  m_numbers[x_i][y_i];
            (m_numbers[x_i][y_i])++;
+           if (m_numbers[x_i][y_i] > m_max) {
+               m_max = m_numbers[x_i][y_i];
+               i_max = x_i;
+               j_max = y_i;
+           };
         }
 
-        m_max = 0;
-
-        for (auto vec_x : m_numbers) {
-            for (auto y : vec_x) {
-                if (y > m_max) m_max = y;
-            }
-        }     
-
-        paint();
+        std::cout << m_max << "\tx: " << i_max << "\ty: " << j_max  << '\n';
 
     }
 
-    void paint() {
 
-        for (int x = 0; x < m_width; x++) {
-            for (int y = 0; y < m_height; y++) {
 
-                int x_i = x / m_res;
-                int y_i = y / m_res;
+    void draw(RenderWindow& app) {
+        for (int i = 0; i < x_num; i++) {
+            for (int j = 0; j < y_num ; j++) {
 
-                m_image.setPixel(x, y, m_colors[static_cast <std::size_t>(1.0f * m_numbers[x_i][y_i] / m_max * (m_colors.size() - 1))]); // ?
+                sf::RectangleShape rectangle(sf::Vector2f(m_res, m_res));
+                int nums = m_numbers[i][j];
+                int a = int(1.0f * m_numbers[i][j] / m_max * (m_colors.size() - 1));
+                rectangle.setFillColor(m_colors[a]);
+                rectangle.setPosition(i*m_res, j*m_res);
+                
+                app.draw(rectangle);
             }
         }
-
-        m_texture.loadFromImage(m_image);
-        m_sprite.setTexture(m_texture, true);
+        
     }
 
-    Sprite* sprite() { return &m_sprite; }
+    int* max() { return &m_max; }
 
 };
 
@@ -191,47 +204,20 @@ bool isCollide(Entity* a, Entity* b)
 
 void calc_collide(Entity* a, Entity* b) {
 
-   /* float v_a = sqrt(a->dx * a->dx + a->dy + a->dy);
-    float v_b = sqrt(b->dx * b->dx + b->dy + b->dy);
-
-    float phi = atan((a->y - b->y) / (a->x - b->x));
-    float theta_a = atan(a->dy / a->dx);
-    float theta_b = atan(b->dy / b->dx);
-
-    a->dx = v_b * cos(theta_b - phi) * cos(phi);
-    a->dy = v_b * cos(theta_b - phi) * sin(phi);
-    b->dx = v_a * cos(theta_a - phi) * cos(phi);
-    b->dy = v_a * cos(theta_a - phi) * sin(phi);*/
-
-    
    float n_x = a->x - b->x;
    float n_y = a->y - b->y;
    
    float n = n_x * n_x + n_y * n_y;
+ 
+
+   float a_a = v_min + f_rand() %(v_max - v_min);
+   float b_b = v_min + f_rand() %(v_max - v_min);
   
 
-   float a_x = a->dx;
-   float a_y = a->dy;
-
-   float b_x = b->dx;
-   float b_y = b->dy;
-
-   float a_a = sqrt(a_x * a_x + a_y * a_y);
-   float b_b = sqrt( b_x * b_x + b_y * b_y);
-
-   /* a->dx +=   2 * n_x * (a_x * n_x + a_y * n_y) / (n_x * n_x + n_y * n_y);
-    a->dy +=   2 * n_y * (a_x * n_x + a_y * n_y) / (n_x * n_x + n_y * n_y);
-
-    b->dx +=   2 * n_x * (b_x * n_x + b_y * n_y) / (n_x * n_x + n_y * n_y);
-    b->dy +=   2 * n_y * (b_x * n_x + b_y * n_y) / (n_x * n_x + n_y * n_y);*/
-
-   a_a = 15 + f_rand() % 10;
-   b_b = 15 + f_rand() % 10;
-
-   a->dx = n_x/n * b_b;
-   a->dy = n_y/n  *b_b;
-   b->dx = -n_x/n *a_a;
-   b->dy = -n_y/n * a_a;
+   a->dx = n_x / n * b_b;
+   a->dy = n_y / n * b_b;
+   b->dx = -n_x / n * a_a;
+   b->dy = -n_y / n * a_a;
 
 }
 
@@ -289,17 +275,16 @@ int main()
            
         }
         
+        
         background.calculate(entities);
        
 
         //////draw//////
-       // app.clear(Color(100, 220, 100, 100));
-
-        app.draw(*background.sprite());
+       
+        background.draw(app);
 
         for (auto i : entities) i->draw(app);
 
-        //app.clear(Color(100, 220, 100, 100));
         app.display();
 
 
