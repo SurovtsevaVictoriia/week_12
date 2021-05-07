@@ -12,12 +12,12 @@ using namespace sf;
 const int W = 1200;
 //hight of window
 const int H = 800;
-
+const int Res = 20;
 //dergees to radians
 float DEGTORAD = 0.017453f;
 
 //numbers 
-int n_Entities = 20;
+int n_Entities = 200;
 int r_r = 5;
 //returns mersenne()
 int f_rand() {
@@ -28,8 +28,6 @@ int f_rand() {
     //return mersenne();
     return rand();
 }
-
-
 
 
 class Entity
@@ -74,7 +72,7 @@ public:
     {       
         //hitbox
         CircleShape circle(R);
-        circle.setFillColor(Color(255, 0, 0, 170));
+        circle.setFillColor(Color(255, 255, 0, 170));
         circle.setPosition(x, y);
         circle.setOrigin(R, R);
         app.draw(circle);
@@ -83,6 +81,102 @@ public:
 
     virtual ~Entity() {};
 };
+
+class Background {
+
+private:
+    int m_res;
+    std::vector < sf::Color > m_colors;
+    std::vector <std::vector<int>> m_numbers;
+
+    int m_width;
+    int m_height;
+    int m_max;
+
+    sf::Image m_image;
+    sf::Sprite m_sprite;
+    sf::Texture m_texture;
+
+public:
+  
+    Background(const int res_, const int width, const int height) {
+        m_res = res_;
+        m_width = width;
+        m_height = height;
+        //m_sprite.setOrigin(-width / 2, -height / 2);
+       
+
+        const int x_num = width / m_res;
+        const int y_num = height / m_res;
+
+
+        for (auto i = 0; i <= x_num; i++) {
+            m_numbers.push_back(std::vector <int>(y_num));
+        }
+
+        m_colors.assign({
+           sf::Color(18, 40, 61), //0
+           sf::Color(10, 72, 101),//1 - 1/4m
+           sf::Color(177, 61, 36),//1/4 m - 2/4m
+           sf::Color(246, 180, 36),//2/4 m - 3/4 m
+           sf::Color(252, 248,231),//3/4 m - m
+        });
+
+        m_image.create(width, height, sf::Color(0, 255, 255));    
+        m_texture.loadFromImage(m_image);
+        m_sprite.setTexture(m_texture, true);
+      
+    }
+
+    void calculate(std::list<Entity*> & entities) {
+
+        //res - number of pixels per squarev
+        for (auto vec_x : m_numbers) {
+            for (auto y : vec_x) {
+                y = 0;
+            }
+        }
+        
+        for (auto e : entities) {
+           int x_i = e->x / m_res;
+           int y_i = e->y / m_res;
+           int a =  m_numbers[x_i][y_i];
+           (m_numbers[x_i][y_i])++;
+        }
+
+        m_max = 0;
+
+        for (auto vec_x : m_numbers) {
+            for (auto y : vec_x) {
+                if (y > m_max) m_max = y;
+            }
+        }     
+
+        paint();
+
+    }
+
+    void paint() {
+
+        for (int x = 0; x < m_width; x++) {
+            for (int y = 0; y < m_height; y++) {
+
+                int x_i = x / m_res;
+                int y_i = y / m_res;
+
+                m_image.setPixel(x, y, m_colors[static_cast <std::size_t>(1.0f * m_numbers[x_i][y_i] / m_max * (m_colors.size() - 1))]); // ?
+            }
+        }
+
+        m_texture.loadFromImage(m_image);
+        m_sprite.setTexture(m_texture, true);
+    }
+
+    Sprite* sprite() { return &m_sprite; }
+
+};
+
+
 
 
 bool isCollide(Entity* a, Entity* b)
@@ -148,6 +242,8 @@ int main()
     RenderWindow app(VideoMode(W, H), "particles");
     app.setFramerateLimit(60);
 
+    Background background(Res, W, H);
+
 
     std::list<Entity*> entities;
     //initial spawn
@@ -174,13 +270,10 @@ int main()
             for (auto b : entities)
             {
                 if (isCollide(a, b))
-                {
-                   
+                {              
 
                     calc_collide(a, b);
-
-
-                
+                                    
                 }
 
             }
@@ -196,10 +289,16 @@ int main()
            
         }
         
-      
+        background.calculate(entities);
+       
+
         //////draw//////
-        app.clear(Color(100, 220, 100, 100));
+       // app.clear(Color(100, 220, 100, 100));
+
+        app.draw(*background.sprite());
+
         for (auto i : entities) i->draw(app);
+
         //app.clear(Color(100, 220, 100, 100));
         app.display();
 
